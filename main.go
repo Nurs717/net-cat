@@ -25,9 +25,9 @@ func main() {
 	fmt.Printf("Listening on the port %s\n", port)
 
 	ch1 := make(chan string)
-
+	// printing from chanel
 	go hub(ch1)
-
+	// accept
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -68,6 +68,7 @@ func handleConnection(conn net.Conn, ch1 chan<- string) {
 
 	printLogo(conn)
 
+	//entering name
 	bname, _, err := bufio.NewReader(conn).ReadLine()
 	if err != nil {
 		fmt.Println(err)
@@ -86,8 +87,9 @@ func handleConnection(conn net.Conn, ch1 chan<- string) {
 			break
 		}
 	}
-	// fmt.Println(name)
+	fmt.Println(name)
 
+	// typing
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		text := scanner.Text()
