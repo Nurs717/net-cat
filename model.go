@@ -3,10 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"log"
 	"net"
-	"os"
 )
 
 type Users struct {
@@ -16,23 +15,24 @@ type Users struct {
 }
 
 func PrintLogo(conn net.Conn) {
-	file, err := os.Open("logo.txt")
+	file, err := ioutil.ReadFile("logo.txt")
 	if err != nil {
 		fmt.Println(err)
 	}
-	defer file.Close()
-	bd := bufio.NewReader(file)
-	for {
-		line, err := bd.ReadString('\n')
-		if err == io.EOF {
-			conn.Write([]byte(line))
-			break
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		conn.Write([]byte(line))
-	}
+	strLogo := string(file)
+	conn.Write([]byte(strLogo))
+	// bd := bufio.NewReader(file)
+	// for {
+	// 	line, err := bd.ReadString('\n')
+	// 	if err == io.EOF {
+	// 		conn.Write([]byte(line))
+	// 		break
+	// 	}
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	conn.Write([]byte(line))
+	// }
 }
 
 func EnterName(conn net.Conn) string {
