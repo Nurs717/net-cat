@@ -19,8 +19,7 @@ func PrintLogo(conn net.Conn) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	strLogo := string(file)
-	conn.Write([]byte(strLogo))
+	conn.Write(file)
 	// bd := bufio.NewReader(file)
 	// for {
 	// 	line, err := bd.ReadString('\n')
