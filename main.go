@@ -8,8 +8,14 @@ import (
 	"time"
 )
 
+type message struct {
+	from net.Conn
+	body string
+}
+
 var data []string
 var connections int
+var allconn []net.Conn
 
 func main() {
 	port := ":"
@@ -26,7 +32,7 @@ func main() {
 	}
 	fmt.Printf("Listening on the port %s\n", port)
 
-	ch1 := make(chan string)
+	ch1 := make(chan message)
 	ch2 := make(chan net.Conn, 2)
 
 	go othconn(ch2)
@@ -44,6 +50,7 @@ func main() {
 		fmt.Println(connections)
 		ch2 <- conn
 		if connections < 4 {
+			allconn = append(allconn, conn)
 			go handleConnection(conn, ch1)
 		} else {
 			conn.Write([]byte("Server is busy. Please try later.\n"))
@@ -58,13 +65,20 @@ func othconn(ch <-chan net.Conn) {
 	}
 }
 
-func hub(ch <-chan string) {
+func hub(ch <-chan message) {
 	for {
-		fmt.Printf("chanel prints %v\n", <-ch)
+		msg := <-ch
+		for _, conn := range allconn {
+			if conn == msg.from {
+				continue
+			}
+
+			conn.Write([]byte(msg.body))
+		}
 	}
 }
 
-func handleConnection(conn net.Conn, ch1 chan<- string) {
+func handleConnection(conn net.Conn, ch1 chan<- message) {
 	defer conn.Close()
 
 	PrintLogo(conn)
@@ -79,13 +93,6 @@ func handleConnection(conn net.Conn, ch1 chan<- string) {
 		conn.Write([]byte("\n"))
 	}
 
-	// otherconn := user.Conn
-	// fmt.Println(otherconn)
-	// if otherconn != nil {
-	// 	connmsg := name + "connected to the server..."
-	// 	otherconn.Write([]byte(connmsg))
-	// }
-	// user.Conn = conn
 	for {
 		time := time.Now().Format("2006-01-02 15:04:05")
 		terminal := "[" + time + "]" + "[" + name + "]" + ":"
@@ -96,16 +103,19 @@ func handleConnection(conn net.Conn, ch1 chan<- string) {
 			fmt.Println("disconnected")
 			break
 		}
-		outgoing := terminal + string(msg)
-		// var msg2 []string
-		// msg2 = append(msg2, outgoing)
-		// e := &Users{
-		// 	Conn: conn,
-		// 	Name: name,
-		// 	Msg:  msg2,
+		connMessage := message{body: "\n" + terminal + string(msg), from: conn}
+		ch1 <- connMessage
+
+		// if allconn != nil {
+		// 	for _, conns := range allconn {
+		// 		if conns != conn {
+		// 			go conns.Write(msg)
+		// 		}
+		// 	}
 		// }
-		// fmt.Println(e)
-		data = append(data, outgoing)
-		ch1 <- string(outgoing)
+
+		data = append(data, terminal+string(msg))
+		// ch1 <- string(outgoing)
+
 	}
 }
