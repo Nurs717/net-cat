@@ -20,18 +20,6 @@ func PrintLogo(conn net.Conn) {
 		fmt.Println(err)
 	}
 	conn.Write(file)
-	// bd := bufio.NewReader(file)
-	// for {
-	// 	line, err := bd.ReadString('\n')
-	// 	if err == io.EOF {
-	// 		conn.Write([]byte(line))
-	// 		break
-	// 	}
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	conn.Write([]byte(line))
-	// }
 }
 
 func EnterName(conn net.Conn) string {

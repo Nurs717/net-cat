@@ -93,6 +93,9 @@ func handleConnection(conn net.Conn, ch1 chan<- message) {
 		conn.Write([]byte("\n"))
 	}
 
+	connMessage := message{body: "\n" + name + " has joined our chat...", from: conn}
+	ch1 <- connMessage
+
 	for {
 		time := time.Now().Format("2006-01-02 15:04:05")
 		terminal := "[" + time + "]" + "[" + name + "]" + ":"
@@ -101,21 +104,13 @@ func handleConnection(conn net.Conn, ch1 chan<- message) {
 		if err != nil {
 			connections = connections - 1
 			fmt.Println("disconnected")
+			connMessage := message{body: "\n" + name + " has left our chat...", from: conn}
+			ch1 <- connMessage
 			break
 		}
 		connMessage := message{body: "\n" + terminal + string(msg), from: conn}
 		ch1 <- connMessage
 
-		// if allconn != nil {
-		// 	for _, conns := range allconn {
-		// 		if conns != conn {
-		// 			go conns.Write(msg)
-		// 		}
-		// 	}
-		// }
-
 		data = append(data, terminal+string(msg))
-		// ch1 <- string(outgoing)
-
 	}
 }
