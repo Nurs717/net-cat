@@ -40,6 +40,6 @@ func EnterName(conn net.Conn) string {
 			break
 		}
 	}
-	fmt.Println(name)
+	fmt.Println(name + " connected")
 	return name
 }

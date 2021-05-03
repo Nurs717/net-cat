@@ -11,11 +11,15 @@ import (
 type message struct {
 	from net.Conn
 	body string
+	info string
 }
 
-var data []string
-var connections int
-var allconn []net.Conn
+var (
+	data        []string
+	connections int
+	allconn     []net.Conn
+	allname     []string
+)
 
 func main() {
 	port := ":"
@@ -33,9 +37,6 @@ func main() {
 	fmt.Printf("Listening on the port %s\n", port)
 
 	ch1 := make(chan message)
-	ch2 := make(chan net.Conn, 2)
-
-	go othconn(ch2)
 
 	// printing from chanel
 	go hub(ch1)
@@ -47,9 +48,7 @@ func main() {
 			panic(err)
 		}
 		connections = connections + 1
-		fmt.Println(connections)
-		ch2 <- conn
-		if connections < 4 {
+		if connections < 10 {
 			allconn = append(allconn, conn)
 			go handleConnection(conn, ch1)
 		} else {
@@ -59,22 +58,24 @@ func main() {
 	}
 }
 
-func othconn(ch <-chan net.Conn) {
-	for {
-		fmt.Printf("chanel 2 prints %v\n", <-ch)
-	}
-}
-
 func hub(ch <-chan message) {
 	for {
 		msg := <-ch
-		for _, conn := range allconn {
+		for i, conn := range allconn {
 			if conn == msg.from {
 				continue
 			}
-
-			conn.Write([]byte(msg.body))
+			if msg.info == "" {
+				conn.Write([]byte(msg.body))
+				bname := "[" + allname[i] + "]" + ":"
+				conn.Write([]byte(bname))
+			} else {
+				conn.Write([]byte(msg.info))
+				aname := msg.body + "[" + allname[i] + "]" + ":"
+				conn.Write([]byte(aname))
+			}
 		}
+		msg.info = ""
 	}
 }
 
@@ -85,7 +86,7 @@ func handleConnection(conn net.Conn, ch1 chan<- message) {
 
 	//entering name
 	name := EnterName(conn)
-	// user := &Users{}
+	allname = append(allname, name)
 
 	// exist data for new users
 	for _, message := range data {
@@ -93,7 +94,8 @@ func handleConnection(conn net.Conn, ch1 chan<- message) {
 		conn.Write([]byte("\n"))
 	}
 
-	connMessage := message{body: "\n" + name + " has joined our chat...", from: conn}
+	onetime := time.Now().Format("2006-01-02 15:04:05")
+	connMessage := message{info: "\n" + name + " has joined our chat...\n", body: "[" + onetime + "]", from: conn}
 	ch1 <- connMessage
 
 	for {
@@ -103,12 +105,16 @@ func handleConnection(conn net.Conn, ch1 chan<- message) {
 		msg, _, err := bufio.NewReader(conn).ReadLine()
 		if err != nil {
 			connections = connections - 1
-			fmt.Println("disconnected")
-			connMessage := message{body: "\n" + name + " has left our chat...", from: conn}
+			fmt.Println(name + " disconnected")
+			connMessage := message{info: "\n" + name + " has left our chat...\n", body: "[" + time + "]", from: conn}
 			ch1 <- connMessage
 			break
 		}
-		connMessage := message{body: "\n" + terminal + string(msg), from: conn}
+
+		var connMessage message
+		if string(msg) != "" {
+			connMessage = message{body: "\n" + terminal + string(msg) + "\n" + "[" + time + "]", from: conn}
+		}
 		ch1 <- connMessage
 
 		data = append(data, terminal+string(msg))
