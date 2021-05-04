@@ -9,7 +9,7 @@ import (
 )
 
 //PrintLogo Prints logo gopher
-func PrintLogo(conn net.Conn) {
+func printLogo(conn net.Conn) {
 	file, err := ioutil.ReadFile("logo.txt")
 	if err != nil {
 		fmt.Println(err)
@@ -18,7 +18,7 @@ func PrintLogo(conn net.Conn) {
 }
 
 //EnterName asking to enter name
-func EnterName(conn net.Conn) string {
+func enterName(conn net.Conn) string {
 	bname, _, err := bufio.NewReader(conn).ReadLine()
 	if err != nil {
 		log.Fatal(err)
@@ -38,4 +38,26 @@ func EnterName(conn net.Conn) string {
 	}
 	fmt.Println(name + " connected")
 	return name
+}
+
+// sending msg for other connections
+func hub(ch <-chan message) {
+	for {
+		msg := <-ch
+		for name, conn := range allconn {
+			if conn == msg.from {
+				continue
+			}
+			if msg.info == "" {
+				conn.Write([]byte(msg.body))
+				bname := "[" + name + "]" + ":"
+				conn.Write([]byte(bname))
+			} else {
+				conn.Write([]byte(msg.info))
+				aname := msg.body + "[" + name + "]" + ":"
+				conn.Write([]byte(aname))
+			}
+		}
+		msg.info = ""
+	}
 }

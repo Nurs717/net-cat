@@ -41,7 +41,7 @@ func main() {
 
 	ch1 := make(chan message)
 
-	// printing from chanel
+	// sending msg for other connections
 	go hub(ch1)
 
 	// accept connections
@@ -51,7 +51,7 @@ func main() {
 			panic(err)
 		}
 		connections = connections + 1
-		if connections < 10 {
+		if connections <= 10 {
 			go handleConnection(conn, ch1)
 		} else {
 			conn.Write([]byte("Server is busy. Please try later.\n"))
@@ -63,10 +63,10 @@ func main() {
 func handleConnection(conn net.Conn, ch1 chan<- message) {
 	defer conn.Close()
 
-	PrintLogo(conn)
+	printLogo(conn)
 
 	//entering name
-	name := EnterName(conn)
+	name := enterName(conn)
 	allconn[name] = conn
 
 	// exist data for new users
@@ -99,26 +99,5 @@ func handleConnection(conn net.Conn, ch1 chan<- message) {
 		ch1 <- connMessage
 
 		data = append(data, terminal+string(msg))
-	}
-}
-
-func hub(ch <-chan message) {
-	for {
-		msg := <-ch
-		for i, conn := range allconn {
-			if conn == msg.from {
-				continue
-			}
-			if msg.info == "" {
-				conn.Write([]byte(msg.body))
-				bname := "[" + i + "]" + ":"
-				conn.Write([]byte(bname))
-			} else {
-				conn.Write([]byte(msg.info))
-				aname := msg.body + "[" + i + "]" + ":"
-				conn.Write([]byte(aname))
-			}
-		}
-		msg.info = ""
 	}
 }
