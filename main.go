@@ -17,9 +17,12 @@ type message struct {
 var (
 	data        []string
 	connections int
-	allconn     []net.Conn
-	allname     []string
+	allconn     map[string]net.Conn
 )
+
+func init() {
+	allconn = make(map[string]net.Conn)
+}
 
 func main() {
 	port := ":"
@@ -49,33 +52,11 @@ func main() {
 		}
 		connections = connections + 1
 		if connections < 10 {
-			allconn = append(allconn, conn)
 			go handleConnection(conn, ch1)
 		} else {
 			conn.Write([]byte("Server is busy. Please try later.\n"))
 			conn.Close()
 		}
-	}
-}
-
-func hub(ch <-chan message) {
-	for {
-		msg := <-ch
-		for i, conn := range allconn {
-			if conn == msg.from {
-				continue
-			}
-			if msg.info == "" {
-				conn.Write([]byte(msg.body))
-				bname := "[" + allname[i] + "]" + ":"
-				conn.Write([]byte(bname))
-			} else {
-				conn.Write([]byte(msg.info))
-				aname := msg.body + "[" + allname[i] + "]" + ":"
-				conn.Write([]byte(aname))
-			}
-		}
-		msg.info = ""
 	}
 }
 
@@ -86,7 +67,7 @@ func handleConnection(conn net.Conn, ch1 chan<- message) {
 
 	//entering name
 	name := EnterName(conn)
-	allname = append(allname, name)
+	allconn[name] = conn
 
 	// exist data for new users
 	for _, message := range data {
@@ -118,5 +99,26 @@ func handleConnection(conn net.Conn, ch1 chan<- message) {
 		ch1 <- connMessage
 
 		data = append(data, terminal+string(msg))
+	}
+}
+
+func hub(ch <-chan message) {
+	for {
+		msg := <-ch
+		for i, conn := range allconn {
+			if conn == msg.from {
+				continue
+			}
+			if msg.info == "" {
+				conn.Write([]byte(msg.body))
+				bname := "[" + i + "]" + ":"
+				conn.Write([]byte(bname))
+			} else {
+				conn.Write([]byte(msg.info))
+				aname := msg.body + "[" + i + "]" + ":"
+				conn.Write([]byte(aname))
+			}
+		}
+		msg.info = ""
 	}
 }

@@ -8,12 +8,7 @@ import (
 	"net"
 )
 
-type Users struct {
-	Conn net.Conn
-	Name string
-	Msg  []string
-}
-
+//PrintLogo Prints logo gopher
 func PrintLogo(conn net.Conn) {
 	file, err := ioutil.ReadFile("logo.txt")
 	if err != nil {
@@ -22,6 +17,7 @@ func PrintLogo(conn net.Conn) {
 	conn.Write(file)
 }
 
+//EnterName asking to enter name
 func EnterName(conn net.Conn) string {
 	bname, _, err := bufio.NewReader(conn).ReadLine()
 	if err != nil {
