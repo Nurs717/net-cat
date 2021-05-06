@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"time"
@@ -27,10 +28,13 @@ func init() {
 func main() {
 	port := ":"
 	args := os.Args[1:]
+
 	if len(args) == 1 {
-		port = port + os.Args[1]
-	} else {
+		port = port + args[0]
+	} else if len(args) == 0 {
 		port = ":8989"
+	} else {
+		log.Fatal("[USAGE]: ./TCPChat $port")
 	}
 
 	listener, err := net.Listen("tcp", port)
@@ -50,7 +54,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		connections = connections + 1
+		connections++
 		if connections <= 10 {
 			go handleConnection(conn, ch1)
 		} else {
@@ -85,7 +89,7 @@ func handleConnection(conn net.Conn, ch1 chan<- message) {
 		conn.Write([]byte(terminal))
 		msg, _, err := bufio.NewReader(conn).ReadLine()
 		if err != nil {
-			connections = connections - 1
+			connections--
 			fmt.Println(name + " disconnected")
 			connMessage := message{info: "\n" + name + " has left our chat...\n", body: "[" + time + "]", from: conn}
 			ch1 <- connMessage
@@ -95,9 +99,8 @@ func handleConnection(conn net.Conn, ch1 chan<- message) {
 		var connMessage message
 		if string(msg) != "" {
 			connMessage = message{body: "\n" + terminal + string(msg) + "\n" + "[" + time + "]", from: conn}
+			ch1 <- connMessage
+			data = append(data, terminal+string(msg))
 		}
-		ch1 <- connMessage
-
-		data = append(data, terminal+string(msg))
 	}
 }
